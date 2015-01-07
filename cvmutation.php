@@ -3,6 +3,21 @@
 require_once 'cvmutation.civix.php';
 
 /**
+ * Send e-mail to Sector Coordinator and set CV in mutation when an
+ * expert has changed his/her own CV
+ * 
+ * @param type $op
+ * @param type $groupID
+ * @param type $entityID
+ * @param type $params
+ */
+function cvmutation_civicrm_custom( $op, $groupID, $entityID, &$params ) {
+    //delegates the handlig to a class
+    $handler = CRM_Cvmutation_Handler::singleton();
+    $handler->custom($op, $groupID, $entityID, $params);
+}
+
+/**
  * Implementation of hook_civicrm_config
  *
  * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_config
