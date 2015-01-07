@@ -76,7 +76,7 @@ class CRM_Cvmutation_Handler {
         $act_params = array();
         $act_params['activity_type_id'] = $config->getCVMutationActivityTypeId();
         $act_params['status_id'] = 2; //completed
-        $act_params['activity_date_time'] = date_format('YmdHis');
+        $act_params['activity_date_time'] = date('YmdHis');
         $act_params['assignee_contact_id'] = $sc_contact_id;
         
         civicrm_api3('Activity', 'create', $act_params);

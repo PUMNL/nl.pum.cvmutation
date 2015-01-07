@@ -14,7 +14,7 @@ class CRM_Cvmutation_CvStatusConfig {
         $this->cv_in_mutation_value = civicrm_api3('OptionValue', 'getvalue', array(
             'return' => 'value',
             'option_group_id' => $this->cv_status_field['option_group_id'],
-            'label' => 'CV_in_mutation',
+            'name' => 'CV_in_mutation',
         ));
     }
     

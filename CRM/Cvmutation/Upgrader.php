@@ -47,19 +47,13 @@ class CRM_Cvmutation_Upgrader extends CRM_Cvmutation_Upgrader_Base {
         }
 
         $params['name'] = $name;
-        $params['label'] = $name;
+        $params['label'] = $label;
         $params['is_active'] = 1;
         $params['is_reserved'] = $is_reserved;
         $params['option_group_id'] = $option_group_id;
         if ($component_id) {
             $params['component_id'] = $component_id;
         }
-        civicrm_api3('OptionValue', 'create', $params);
-       
-        //update label
-        $params = array();
-        $params['id'] = civicrm_api3('OptionValue', 'getvalue', array('return' => 'id', 'name' => $name, 'option_group_id' => $option_group_id));
-        $params['label'] = $label;
         civicrm_api3('OptionValue', 'create', $params);
     }
 
