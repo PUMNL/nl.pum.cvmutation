@@ -10,12 +10,8 @@ class CRM_Cvmutation_CvStatusConfig {
     
     protected function __construct() {
         $cg = civicrm_api3('CustomGroup', 'getvalue', array('return' => 'id', 'name' => 'expert_data'));
-        $this->cv_status_field = civicrm_api3('CustomField', 'getsingle', array('custom_group_id' => $cg, 'name' => 'CV_Status'));
-        $this->cv_in_mutation_value = civicrm_api3('OptionValue', 'getvalue', array(
-            'return' => 'value',
-            'option_group_id' => $this->cv_status_field['option_group_id'],
-            'name' => 'CV_in_mutation',
-        ));
+        $this->cv_status_field = civicrm_api3('CustomField', 'getsingle', array('custom_group_id' => $cg, 'name' => 'CV_in_Mutation'));
+        $this->cv_in_mutation_value = 1;
     }
     
     /**
