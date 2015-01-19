@@ -34,7 +34,6 @@ class CRM_Cvmutation_Upgrader extends CRM_Cvmutation_Upgrader_Base {
     }
 
     protected function createCvMuationActivityType() {
-        $this->ctx->log->info('Create activity type CV Mutation');
         $this->addOptionValue('CVMutation', 'CV Mutation', $this->activity_type, 1);
     }
 
