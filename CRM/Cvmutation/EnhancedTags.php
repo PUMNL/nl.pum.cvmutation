@@ -14,6 +14,8 @@ class CRM_Cvmutation_EnhancedTags {
     protected $sectorTree = array();
     protected static $singleton;
 
+    protected $parentSectorTagId; //tag id of Sector tag (toplevel)
+
     protected function __construct() {
         $this->setSectorTree();
     }
@@ -46,6 +48,26 @@ class CRM_Cvmutation_EnhancedTags {
             }
         }
         return $sector_coordinator_id;
+    }
+
+    /**
+     * Function to get sector from customer
+     *
+     * @param int $client_id
+     * @param date $case_start_date
+     * @return int $sector_coordinator_id
+     * @access protected
+     * @static
+     */
+    public function get_sector_tag_id($contact_id) {
+      $sector_tag_id = 0;
+      $contact_tags = $this->get_contact_tags($contact_id);
+      foreach ($contact_tags as $contact_tag) {
+        if ($this->is_sector_tag($contact_tag['tag_id']) == TRUE) {
+          $sector_tag_id = $contact_tag['tag_id'];
+        }
+      }
+      return $sector_tag_id;
     }
 
     /**
@@ -104,11 +126,12 @@ class CRM_Cvmutation_EnhancedTags {
             return FALSE;
         }
 
-        if (in_array($tag_id, $this->sectorTree)) {
-            return TRUE;
-        } else {
-            return FALSE;
+        $tag = civicrm_api3('Tag', 'getsingle', array('id' => $tag_id));
+        if (isset($tag['parent_id']) && $tag['parent_id'] == $this->parentSectorTagId) {
+          return true;
         }
+        return false;
+
     }
 
     private function setSectorTree() {
@@ -117,6 +140,7 @@ class CRM_Cvmutation_EnhancedTags {
          */
         try {
             $sectorTagId = civicrm_api3('Tag', 'Getvalue', array('name' => 'Sector', 'return' => 'id'));
+            $this->parentSectorTagId = $sectorTagId;
         } catch (CiviCRM_API3_Exception $ex) {
             throw new Exception(ts('Could not find a Tag called Sector, error from API Tag Getvalue: ') . $ex->getMessage());
         }
