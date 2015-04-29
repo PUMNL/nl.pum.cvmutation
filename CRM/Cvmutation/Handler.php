@@ -23,8 +23,17 @@ class CRM_Cvmutation_Handler {
      */
     protected $alreadyHandled = false;
 
+
+    protected $completed_case_status;
+
+    protected $expert_application_case_type;
+
     protected function __construct() {
-        
+      $case_status_id = civicrm_api3('OptionGroup', 'getvalue', array('return' => 'id', 'name' => 'case_status'));
+      $this->completed_case_status = civicrm_api3('OptionValue', 'getsingle', array('name' => 'Completed', 'option_group_id' => $case_status_id));
+
+      $case_type_id = civicrm_api3('OptionGroup', 'getvalue', array('return' => 'id', 'name' => 'case_type'));
+      $this->expert_application_case_type = civicrm_api3('OptionValue', 'getsingle', array('name' => 'Expertapplication', 'option_group_id' => $case_type_id));
     }
 
     /**
@@ -52,8 +61,26 @@ class CRM_Cvmutation_Handler {
         
         //set custom field CV in mutation
         $this->setCvStatus($entityID);
-        
+
         $this->alreadyHandled = true;
+    }
+
+    protected function checkIfExpertApplicationCaseIsActive($contact_id) {
+      $sql = "SELECT COUNT(*)
+              FROM civicrm_case
+              INNER JOIN civicrm_case_contact ON civicrm_case.id = civicrm_case_contact.case_id
+              WHERE civicrm_case.case_type_id LIKE %1
+              AND civicrm_case.status_id != %2
+              AND civicrm_case_contact.contact_id = %3";
+      $params[1] = array('%'.CRM_Core_DAO::VALUE_SEPARATOR.$this->expert_application_case_type['value'].CRM_Core_DAO::VALUE_SEPARATOR.'%', 'String');
+      $params[2] = array($this->completed_case_status['value'], 'Integer');
+      $params[3] = array($contact_id, 'Integer');
+      $count = CRM_Core_DAO::singleValueQuery($sql, $params);
+
+      if ($count > 0) {
+        return true;
+      }
+      return false;
     }
     
     protected function setCvStatus($contact_id) {
@@ -100,6 +127,10 @@ class CRM_Cvmutation_Handler {
         //handle this
         if ($session->get('userID') != $entityID) {
             return false;
+        }
+
+        if ($this->checkIfExpertApplicationCaseIsActive($entityID)) {
+          return false;
         }
 
         return true;
