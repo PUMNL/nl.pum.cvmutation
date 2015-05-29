@@ -134,18 +134,32 @@ class CRM_Cvmutation_EnhancedTags {
 
     }
 
+  public static function clearSectorTreeFromCache() {
+    CRM_Core_BAO_Setting::setItem(false, 'nl.pum.cvmutation', 'CRM_Cvmutation_EnhancedTags.sectorTree');
+    CRM_Cvmutation_EnhancedTags::singleton(); //reload 
+  }
+
     private function setSectorTree() {
+      $sectorTree = CRM_Core_BAO_Setting::getItem('nl.pum.cvmutation', 'CRM_Cvmutation_EnhancedTags.sectorTree');
+      if (!empty($sectorTree)) {
+        $this->sectorTree = unserialize($sectorTree);
+      } else {
         /*
          * first check if tag 'Sector' exists
          */
         try {
-            $sectorTagId = civicrm_api3('Tag', 'Getvalue', array('name' => 'Sector', 'return' => 'id'));
-            $this->parentSectorTagId = $sectorTagId;
+          $sectorTagId = civicrm_api3('Tag', 'Getvalue', array(
+            'name' => 'Sector',
+            'return' => 'id'
+          ));
+          $this->parentSectorTagId = $sectorTagId;
         } catch (CiviCRM_API3_Exception $ex) {
-            throw new Exception(ts('Could not find a Tag called Sector, error from API Tag Getvalue: ') . $ex->getMessage());
+          throw new Exception(ts('Could not find a Tag called Sector, error from API Tag Getvalue: ') . $ex->getMessage());
         }
         $this->sectorTree[] = $sectorTagId;
         $this->getSectorChildren($sectorTagId);
+        CRM_Core_BAO_Setting::setItem(serialize($this->sectorTree), 'nl.pum.cvmutation', 'CRM_Cvmutation_EnhancedTags.sectorTree');
+      }
     }
 
     private function getSectorChildren($sectorTagId) {
@@ -160,19 +174,21 @@ class CRM_Cvmutation_EnhancedTags {
                 $tagChildren = civicrm_api3('Tag', 'Get', $childParams);
                 $gotAllChildren = $this->gotAllSectorChildren($tagChildren['count']);
                 if ($tagChildren['count'] > 0) {
-                    $this->addSectorChildren($tagChildren['values']);
-                    $levelChildren = $this->sectorTree;
+                    $levelChildren= $this->addSectorChildren($tagChildren['values']);
                 }
             }
         }
     }
 
     private function addSectorChildren($tagChildren) {
+        $return = array();
         foreach ($tagChildren as $tagChild) {
             if (!in_array($tagChild['id'], $this->sectorTree)) {
                 $this->sectorTree[] = $tagChild['id'];
+                $return[] = $tagChild['id'];
             }
         }
+        return $return;
     }
 
     private function gotAllSectorChildren($count) {
