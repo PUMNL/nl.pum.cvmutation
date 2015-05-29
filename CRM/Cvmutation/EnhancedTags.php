@@ -136,7 +136,7 @@ class CRM_Cvmutation_EnhancedTags {
 
   public static function clearSectorTreeFromCache() {
     CRM_Core_BAO_Setting::setItem(false, 'nl.pum.cvmutation', 'CRM_Cvmutation_EnhancedTags.sectorTree');
-    CRM_Cvmutation_EnhancedTags::singleton(); //reload 
+    CRM_Cvmutation_EnhancedTags::singleton(); //reload
   }
 
     private function setSectorTree() {

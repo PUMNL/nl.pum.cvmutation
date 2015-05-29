@@ -2,6 +2,12 @@
 
 require_once 'cvmutation.civix.php';
 
+function cvmutation_civicrm_post($op, $objectName, $objectId, &$objectRef) {
+  if ($objectName == 'Tag') {
+    CRM_Cvmutation_EnhancedTags::clearSectorTreeFromCache();
+  }
+}
+
 /**
  * Send e-mail to Sector Coordinator and set CV in mutation when an
  * expert has changed his/her own CV
