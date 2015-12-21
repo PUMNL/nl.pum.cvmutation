@@ -9,6 +9,8 @@ class CRM_Cvmutation_Config {
     protected $cg = array();
     
     protected $CVMutationActivity;
+
+    protected $side_activities_field_id;
     
     protected function __construct() {
         foreach($this->custom_group_names as $cg_name) {
@@ -17,6 +19,9 @@ class CRM_Cvmutation_Config {
         
         $activity_type = civicrm_api3('OptionGroup', 'getvalue', array('return' => 'id', 'name' => 'activity_type'));
         $this->CVMutationActivity = civicrm_api3('OptionValue', 'getsingle', array('name' => 'CVMutation', 'option_group_id' => $activity_type));
+
+        $expert_data_custom_group_id = civicrm_api3('CustomGroup', 'getvalue', array('return' => 'id', 'name' => 'expert_data'));
+        $this->side_activities_field_id = civicrm_api3('CustomField', 'getvalue', array('return' => 'id', 'name' => 'side_activities', 'custom_group_id' => $expert_data_custom_group_id));
     }
     
     /**
@@ -43,6 +48,10 @@ class CRM_Cvmutation_Config {
     
     public function getCVMutationActivityTypeId() {
         return $this->CVMutationActivity['value'];
+    }
+
+    public function getSideActivitiesFieldId() {
+        return $this->side_activities_field_id;
     }
 }
 

@@ -143,6 +143,7 @@ class CRM_Cvmutation_EnhancedTags {
       $sectorTree = CRM_Core_BAO_Setting::getItem('nl.pum.cvmutation', 'CRM_Cvmutation_EnhancedTags.sectorTree');
       if (!empty($sectorTree)) {
         $this->sectorTree = unserialize($sectorTree);
+        $this->parentSectorTagId = reset($this->sectorTree);
       } else {
         /*
          * first check if tag 'Sector' exists
