@@ -261,11 +261,13 @@ class CRM_Cvmutation_Handler {
                             $value = array($value);
                         }
                         foreach($value as $country_id) {
-                            $country = civicrm_api3('Country', 'getvalue', array('id' => $country_id, 'return' => 'name'));
-                            if (strlen($formattedValue)) {
-                                $formattedValue .= ', ';
+                            if ($country_id) {
+                                $country = civicrm_api3('Country', 'getvalue', array('id' => $country_id, 'return' => 'name'));
+                                if (strlen($formattedValue)) {
+                                    $formattedValue .= ', ';
+                                }
+                                $formattedValue .= $country;
                             }
-                            $formattedValue .= $country;
                         }
                     } elseif (is_array($value)) {
                         $formattedValue = implode(",", $value);
