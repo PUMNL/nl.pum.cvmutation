@@ -79,6 +79,22 @@ class CRM_Cvmutation_Handler {
         $this->alreadyHandled = true;
     }
 
+    public function cvmutation($contact_id) {
+        $this->newCvData = $this->getCvData($contact_id);
+        $details = $this->formatCvDataToDetailText();
+        if ($this->alreadyHandled) {
+            if ($this->activity_id) {
+                $activity_params['id'] = $this->activity_id;
+                $activity_params['details'] = $details;
+                civicrm_api3('Activity', 'create', $activity_params);
+            }
+        } else {
+            $this->createCVMutationActivity($details);
+            $this->alreadyHandled = true;
+        }
+        return $this->activity_id;
+    }
+
     protected function checkIfExpertApplicationCaseIsActive($contact_id) {
       $sql = "SELECT COUNT(*)
               FROM civicrm_case
@@ -213,6 +229,7 @@ class CRM_Cvmutation_Handler {
             $fields = civicrm_api3('CustomField', 'get', array('custom_group_id' => $groupId));
             $dataParams = array();
             $dataParams['entity_id'] = $contact_id;
+            $dataParams['sequential'] = 1;
             $fieldInfo= array();
             foreach($fields['values'] as $field) {
                 $dataParams['return.custom_'.$field['id']] = 1;
@@ -257,6 +274,17 @@ class CRM_Cvmutation_Handler {
                 }
             }
         }
+
+        $side_activity = '';
+        try {
+            $side_activity = civicrm_api3('Contact', 'getvalue', array('return' => 'custom_'.$config->getSideActivitiesFieldId(), 'id' => $contact_id));
+        } catch (Exception $e) {
+            //do nothing
+        }
+        $return[$config->getExpertDataCustomGroupId()]['label'] = civicrm_api3('CustomGroup', 'getvalue', array('return' => 'title', 'id' => $config->getExpertDataCustomGroupId()));
+        $return[$config->getExpertDataCustomGroupId()]['data'][0]['fields'][$config->getSideActivitiesFieldId()]['label'] = civicrm_api3('CustomField', 'getvalue', array('return' => 'label', 'id' => $config->getSideActivitiesFieldId()));
+        $return[$config->getExpertDataCustomGroupId()]['data'][0]['fields'][$config->getSideActivitiesFieldId()]['value'] = $side_activity;
+
         return $return;
     }
 
