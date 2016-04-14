@@ -11,24 +11,6 @@ class CRM_Cvmutation_Handler {
 
     protected static $singleton;
 
-    /**
-     * Flag to test if the Cvmutation has already been handled
-     * 
-     * This flag is needed because a CV is build with multiple custom groups
-     * and each custom group is handled indivually
-     * So we will set this flag as soon as the first handling to prevent further 
-     * handling
-     * 
-     * @var bool
-     */
-    protected $alreadyHandled = false;
-
-    protected $activity_id = false;
-
-    protected $oldCvData = array();
-
-    protected $newCvData = array();
-
 
     protected $completed_case_status;
 
@@ -52,49 +34,30 @@ class CRM_Cvmutation_Handler {
         return self::$singleton;
     }
 
+    /**
+     * Delegate of hook_civicrm_custom.
+     *
+     * When CV data is editted set the CV status to CV in mutation
+     *
+     * @param $op
+     * @param $groupID
+     * @param $entityID
+     * @param $params
+     */
     public function custom($op, $groupID, $entityID, &$params) {
         if (!$this->isValid($op, $groupID, $entityID, $params)) {
             return;
         }
-
-        $this->newCvData = $this->getCvData($entityID);
-        $details = $this->formatCvDataToDetailText();
-
-        if ($this->alreadyHandled) {
-            if ($this->activity_id) {
-                $activity_params['id'] = $this->activity_id;
-                $activity_params['details'] = $details;
-                civicrm_api3('Activity', 'create', $activity_params);
-            }
-            return;
-        }
-
-        //create activity - this activity could be used with scheduled reminders
-        //to inform the SC
-        $this->createCVMutationActivity($details);
-
         //set custom field CV in mutation
         $this->setCvStatus($entityID);
-
-        $this->alreadyHandled = true;
     }
 
-    public function cvmutation($contact_id) {
-        $this->newCvData = $this->getCvData($contact_id);
-        $details = $this->formatCvDataToDetailText();
-        if ($this->alreadyHandled) {
-            if ($this->activity_id) {
-                $activity_params['id'] = $this->activity_id;
-                $activity_params['details'] = $details;
-                civicrm_api3('Activity', 'create', $activity_params);
-            }
-        } else {
-            $this->createCVMutationActivity($details);
-            $this->alreadyHandled = true;
-        }
-        return $this->activity_id;
-    }
-
+    /**
+     * Checks whether an expert application case is active.
+     *
+     * @param $contact_id
+     * @return bool
+     */
     protected function checkIfExpertApplicationCaseIsActive($contact_id) {
       $sql = "SELECT COUNT(*)
               FROM civicrm_case
@@ -113,12 +76,19 @@ class CRM_Cvmutation_Handler {
       return false;
     }
 
-    protected function formatCvDataToDetailText() {
+    /**
+     * Pretty format the old and new cv.
+     *
+     * @param $oldCvData
+     * @param $newCvData
+     * @return string
+     */
+    public function formatCvDataToDetailText($oldCvData, $newCvData) {
         $group_ids = array();
-        foreach(array_keys($this->oldCvData) as $group_id) {
+        foreach(array_keys($oldCvData) as $group_id) {
             $group_ids[] = $group_id;
         }
-        foreach(array_keys($this->newCvData) as $group_id) {
+        foreach(array_keys($newCvData) as $group_id) {
             if (!in_array($group_id, $group_ids)) {
                 $group_ids[] = $group_id;
             }
@@ -127,16 +97,16 @@ class CRM_Cvmutation_Handler {
         $details = '';
         foreach($group_ids as $group_id) {
             $groupTitle = '';
-            if (isset($this->oldCvData[$group_id])) {
-                $groupTitle = $this->oldCvData[$group_id]['label'];
-            } elseif (isset($this->newCvData[$group_id])) {
-                $groupTitle = $this->newCvData[$group_id]['label'];
+            if (isset($oldCvData[$group_id])) {
+                $groupTitle = $oldCvData[$group_id]['label'];
+            } elseif (isset($newCvData[$group_id])) {
+                $groupTitle = $newCvData[$group_id]['label'];
             }
 
             $details .= '<h2>'.$groupTitle.'</h2>';
 
-            $originalRecords = array_values($this->oldCvData[$group_id]['data']);
-            $newRecords = array_values($this->newCvData[$group_id]['data']);
+            $originalRecords = array_values($oldCvData[$group_id]['data']);
+            $newRecords = array_values($newCvData[$group_id]['data']);
             $maxRecords = count($newRecords);
             if (count($originalRecords) > count($newRecords)) {
                 $maxRecords = count($originalRecords);
@@ -169,7 +139,13 @@ class CRM_Cvmutation_Handler {
 
         return $details;
     }
-    
+
+    /**
+     * Update the status field to CV in mutation.
+     *
+     * @param $contact_id
+     * @throws \CiviCRM_API3_Exception
+     */
     protected function setCvStatus($contact_id) {
         $config = CRM_Cvmutation_CvStatusConfig::singleton();
         $params['id'] = $contact_id;
@@ -177,48 +153,41 @@ class CRM_Cvmutation_Handler {
         civicrm_api3('Contact', 'create', $params);
     }
 
-    protected function createCVMutationActivity($details) {
+    /**
+     * Create a CV mutation activity and assign it to the sector coordinator.
+     *
+     * @param $contact_id
+     * @param $details
+     * @throws \CiviCRM_API3_Exception
+     */
+    public function createCVMutationActivity($contact_id, $details) {
         $config = CRM_Cvmutation_Config::singleton();
         $enhancedTags = CRM_Cvmutation_EnhancedTags::singleton();
-        $session = CRM_Core_Session::singleton();
 
-        $sc_contact_id = $enhancedTags->get_sector_coordinator_id($session->get('userID'));
+        $sc_contact_id = $enhancedTags->get_sector_coordinator_id($contact_id);
 
         $act_params = array();
-        if ($this->activity_id) {
-            $act_params['id'] = $this->activity_id;
-        }
         $act_params['activity_type_id'] = $config->getCVMutationActivityTypeId();
         $act_params['status_id'] = 2; //completed
         $act_params['activity_date_time'] = date('YmdHis');
         if ($sc_contact_id) {
             $act_params['assignee_contact_id'] = $sc_contact_id;
         }
+        $act_params['source_contact_id'] = $contact_id;
+        $act_params['target_contact_id'] = $contact_id;
         $act_params['details'] = $details;
         
-        $result = civicrm_api3('Activity', 'create', $act_params);
-        $this->activity_id = $result['id'];
+        civicrm_api3('Activity', 'create', $act_params);
     }
 
-    public function pre($op, $objectName, $id, &$params) {
-        if ($objectName != 'Individual') {
-            return;
-        }
-        if ($op != 'edit') {
-            return;
-        }
-
-        $config = CRM_Cvmutation_Config::singleton();
-        if (!isset($params['custom_'.$config->getSideActivitiesFieldId()])) {
-            return;
-        }
-
-        if (empty($this->oldCvData)) {
-            $this->oldCvData = $this->getCvData($id);
-        }
-    }
-
-    protected function getCvData($contact_id) {
+    /**
+     * Returns the current CV as an array
+     *
+     * @param $contact_id
+     * @return array
+     * @throws \CiviCRM_API3_Exception
+     */
+    public function getCvData($contact_id) {
         $form = CRM_Core_DAO::$_nullObject;
         $return = array();
         $config = CRM_Cvmutation_Config::singleton();
@@ -290,6 +259,15 @@ class CRM_Cvmutation_Handler {
         return $return;
     }
 
+    /**
+     * Checks whether th hook_civicrm_custom is valid for processing for CV mutation.
+     *
+     * @param $op
+     * @param $groupID
+     * @param $entityID
+     * @param $params
+     * @return bool
+     */
     protected function isValid($op, $groupID, $entityID, &$params) {
         $config = CRM_Cvmutation_Config::singleton();
         $session = CRM_Core_Session::singleton();

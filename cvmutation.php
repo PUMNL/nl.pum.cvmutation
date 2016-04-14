@@ -8,11 +8,6 @@ function cvmutation_civicrm_post($op, $objectName, $objectId, &$objectRef) {
   }
 }
 
-function cvmutation_civicrm_pre($op, $objectName, $id, &$params) {
-  $handler = CRM_Cvmutation_Handler::singleton();
-  $handler->pre($op, $objectName, $id, $params);
-}
-
 /**
  * Send e-mail to Sector Coordinator and set CV in mutation when an
  * expert has changed his/her own CV

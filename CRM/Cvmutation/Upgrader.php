@@ -33,6 +33,16 @@ class CRM_Cvmutation_Upgrader extends CRM_Cvmutation_Upgrader_Base {
         return TRUE;
     }
 
+    /**
+     * Upgrade for version 1.12
+     *
+     * @return bool
+     */
+    public function upgrade_1120() {
+        $this->executeSqlFile('sql/civicrm_cvmutation.sql');
+        return TRUE;
+    }
+
     protected function createCvMuationActivityType() {
         $this->addOptionValue('CVMutation', 'CV Mutation', $this->activity_type, 1);
     }
