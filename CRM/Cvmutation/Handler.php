@@ -162,9 +162,9 @@ class CRM_Cvmutation_Handler {
      */
     public function createCVMutationActivity($contact_id, $details) {
         $config = CRM_Cvmutation_Config::singleton();
-        $enhancedTags = CRM_Cvmutation_EnhancedTags::singleton();
+        $session = CRM_Core_Session::singleton();
 
-        $sc_contact_id = $enhancedTags->get_sector_coordinator_id($contact_id);
+        $sc_contact_id = CRM_Cvmutation_ContactSegment::getSectorCoordinator($session->get('userID'));
 
         $act_params = array();
         $act_params['activity_type_id'] = $config->getCVMutationActivityTypeId();
