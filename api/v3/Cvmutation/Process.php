@@ -14,7 +14,11 @@
 function civicrm_api3_cvmutation_process($params) {
   $cvMutation = CRM_Cvmutation_Handler::singleton();
   $since = new DateTime();
-  $since->modify('-3 hours');
+  $hours = 3;
+  if (isset($params['no_delay'])) {
+    $hours = 0;
+  }
+  $since->modify('-'.$hours.' hours');
   $sql = "SELECT * FROM `civicrm_cvmutation` WHERE `date` <= %1 ORDER BY `date` ASC LIMIT 0, 100";
   $sqlParams[1] = array($since->format('Y-m-d H:i'), 'String');
   $dao = CRM_Core_DAO::executeQuery($sql, $sqlParams);
@@ -34,7 +38,7 @@ function civicrm_api3_cvmutation_process($params) {
   // Clean up, remove the records from the cvmuatuion table.
   if (count($deleteIds) > 0) {
     $cleanUpSql = "DELETE FROM `civicrm_cvmutation` WHERE `id` IN(".implode(",", $deleteIds).")";
-    //CRM_Core_DAO::executeQuery($cleanUpSql);
+    CRM_Core_DAO::executeQuery($cleanUpSql);
   }
 
   $returnValues = array('count' => $count);
