@@ -25,13 +25,20 @@ function civicrm_api3_cvmutation_process($params) {
   $count = 0;
   $deleteIds = array();
   while($dao->fetch()) {
-    $old_cv = unserialize($dao->old_cv);
-    $new_cv = unserialize($dao->new_cv);
-    if (is_array($old_cv) && is_array($new_cv)) {
-      $details = $cvMutation->formatCvDataToDetailText($old_cv, $new_cv);
-      $cvMutation->createCVMutationActivity($dao->contact_id, $details);
+    try {
+      // Check whether the contact still exists
+      $contact = civicrm_api3('Contact', 'getsingle', array('id' => $dao->contact_id));
+
+      $old_cv = unserialize($dao->old_cv);
+      $new_cv = unserialize($dao->new_cv);
+      if (is_array($old_cv) && is_array($new_cv)) {
+        $details = $cvMutation->formatCvDataToDetailText($old_cv, $new_cv);
+        $cvMutation->createCVMutationActivity($dao->contact_id, $details);
+      }
+      $count++;
+    } catch (Exception $e) {
+      // do nothing
     }
-    $count ++;
     $deleteIds[] = $dao->id;
   }
 
