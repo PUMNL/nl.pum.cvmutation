@@ -11,7 +11,7 @@ function cvmutation_civicrm_post($op, $objectName, $objectId, &$objectRef) {
 /**
  * Send e-mail to Sector Coordinator and set CV in mutation when an
  * expert has changed his/her own CV
- * 
+ *
  * @param type $op
  * @param type $groupID
  * @param type $entityID
